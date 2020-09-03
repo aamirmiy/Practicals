@@ -1,0 +1,100 @@
+section .data
+m1:   db "Numbers are :  ",0x0A
+      db "101.11, 102.22, 103.33, 104.44, 105.55", 0x0A
+len: equ $-m1
+array: dd 101.11, 102.22, 103.33, 104.44, 105.55
+arraycnt: dw 05
+dec:dq 100
+dot: db"."
+dlen: equ $-dot
+cnt3:db 0
+meanmsg: db"The mean is",0x0A
+l2: equ $-meanmsg
+varmsg: db"The variance is",0x0A
+l3: equ $-varmsg
+stdmsg: db"The standard deviation is",0x0A
+l4: equ $-stdmsg
+cnt2: db 02H
+section .bss
+disbuffer: resb 2
+buffer: rest 1 
+mean: resd 1
+var: resd 1
+std: resd 1
+%macro scall 4
+mov rax,%1
+mov rdi,%2
+mov rsi,%3
+mov rdx,%4
+syscall
+%endmacro
+section .text
+FINIT
+                   ;finding mean
+FLDZ
+mov rsi,array
+mov byte[cnt2],5
+up:
+	fadd dword[rsi]
+	add rsi,4
+	dec byte[cnt2]
+	jnz up
+	fidiv word[arraycnt]
+	fst dword[mean]
+	mov rsi,array
+	mov byte[cnt2],5
+	call print
+	fldz
+up1:
+	fadd dword[rsi]
+	fsub dword[mean]
+	fmul st0
+	fadd
+	add rsi,4
+	dec byte[cnt2]
+	jnz up1
+	fidiv word[arraycnt]
+	fst dword[var]
+	call print
+	fldz
+	        ;standard deviation
+	fld dword[var]
+	fsqrt
+	fst dword[std]
+	call print
+print:
+	fimul word[dec]
+	FBSTP buffer
+	mov rsi,buffer+9
+	mov byte[cnt3],9
+up3:
+	mov dl,byte[rsi]
+	push rsi
+	call print2
+	pop rsi
+	dec rsi
+	dec byte[cnt3]
+	jnz up3
+	scall 1,1,dot,dlen
+	mov dl,byte[buffer]
+	call print2
+	ret
+print2:
+	mov rdi,disbuffer
+	mov byte[cnt2],2H
+aup:
+	rol bl,04
+	mov cl,bl
+	and cl,0FH
+	cmp cl,09H
+	jbe ANEXT
+	ADD cl,07H
+ANEXT: 
+	add cl, 30H
+	mov byte[rdi],cl
+	INC rdi
+	dec byte[cnt2]
+	JNZ aup
+	scall 1,1,disbuffer,2
+	ret		
+      
